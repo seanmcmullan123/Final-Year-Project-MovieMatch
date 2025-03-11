@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Edit Profile</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <style>
+        #profile_pic_preview {
+            width: 300px;
+            height: 300px;
+            border: 3px solid #ddd;
+            object-fit: contain;
+            cursor: pointer;
+        }
+        .selected-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .selected-item {
+            display: flex;
+            align-items: center;
+            background-color: #007bff;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .remove-item {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+        .dropdown-list {
+            border: 1px solid #ddd;
+            background: white;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: calc(100% - 20px);
+            z-index: 1000;
+            display: none;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            padding: 5px;
+        }
+        .dropdown-item {
+            padding: 8px;
+            cursor: pointer;
+            display: block;
+        }
+        .dropdown-item:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 class="mt-5">Edit Profile</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data" autocomplete="off" class="mt-4" onsubmit="saveProfile(event)">
+        <!-- Profile Picture Upload & Cropping -->
+        <div class="form-group text-center">
+            <label for="profile_pic">Profile Picture</label>
+            <input type="file" name="profile_pic" id="profile_pic" class="form-control" style="display:none;" accept="image/*" onchange="previewFile()">
+            
+            <div class="profile-pic-container">
+                <img id="profile_pic_preview" 
+                    src="{{ user.profile_pic_url if user.profile_pic_url else 'https://via.placeholder.com/300' }}" 
+                    alt="Profile Picture" 
+                    class="img-thumbnail" 
+                    onclick="document.getElementById('profile_pic').click();">
+            </div>
+
+            <!-- Cropping Section -->
+            <div id="crop-container" style="display:none; text-align: center;">
+                <h5>Adjust Your Profile Picture</h5>
+                <canvas id="croppedCanvas"></canvas>
+                <button type="button" class="btn btn-success mt-2" onclick="cropImage()">Crop & Save</button>
+            </div>
+        </div>
+        
+
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" name="username" id="username" class="form-control" value="{{ user.username }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="gender_preference">Preferred Match Gender:</label>
+            <select name="gender_preference" id="gender_preference" class="form-control">
+                <option value="Both" {% if gender_preference == 'Both' %}selected{% endif %}>Both</option>
+                <option value="Male" {% if gender_preference == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if gender_preference == 'Female' %}selected{% endif %}>Female</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="bio">Bio (5-100 words)</label>
+            <textarea name="bio" id="bio" rows="3" class="form-control" placeholder="Write something about yourself.">{{ user.bio if user.bio else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="fun_fact">Fun Fact (3-50 words)</label>
+            <input type="text" name="fun_fact" id="fun_fact" class="form-control" placeholder="A short fun fact about you..." value="{{ user.fun_fact if user.fun_fact else '' }}">
+        </div>
+
+        <!-- Search and select up to 3 movies -->
+        <div class="form-group">
+            <label for="movie_search">Search Movies</label>
+            <input type="text" id="movie_search" class="form-control" placeholder="Enter movie name" onkeyup="searchMovies()">
+            <div class="dropdown-list" id="movie_results"></div>
+            <div class="selected-list" id="selected_movies">
+                {% for movie in user.fav_movies %}
+                <span class="selected-item" data-value="{{ movie }}" id="movie_{{ loop.index }}">
+                    {{ movie }} <span class="remove-item" onclick="removeItem(this, 'fav_movies')">X</span>
+                </span>
+                {% endfor %}
+            </div>
+            <!-- <input type="hidden" name="fav_movies" id="fav_movies_input" value="{{ user.fav_movies | join(',') }}"> -->
+            <input type="hidden" name="fav_movies" id="fav_movies_input" value='{{ user.fav_movies | tojson | safe }}'>
+        </div>
+
+
+        <!-- Search and select up to 3 actors -->
+        <div class="form-group">
+            <label for="actor_search">Search Actors</label>
+            <input type="text" id="actor_search" class="form-control" placeholder="Enter actor name" onkeyup="searchActors()">
+            <div class="dropdown-list" id="actor_results"></div>
+            <div class="selected-list" id="selected_actors">
+                {% for actor in user.fav_actors %}
+                <span class="selected-item" data-value="{{ actor }}" id="actor_{{ loop.index }}">
+                    {{ actor }} <span class="remove-item" onclick="removeItem(this, 'fav_actors')">X</span>
+                </span>
+                {% endfor %}
+            </div>
+            <!-- <input type="hidden" name="fav_actors" id="fav_actors_input" value="{{ user.fav_actors | join(',') }}"> -->
+            <input type="hidden" name="fav_actors" id="fav_actors_input" value='{{ user.fav_actors | tojson | safe }}'>
+        </div>
+
+
+        <!-- Genre Selection -->
+        <div class="form-group">
+            <label for="genre_search">Select Your Favorite Genres</label>
+            <input type="text" id="genre_search" class="form-control" placeholder="Search genres">
+            <div class="dropdown-list" id="genre_results"></div>
+            
+            <div class="selected-list" id="selected_genres">
+                {% for genre in user.fav_genres %}
+                <span class="selected-item" data-value="{{ genre }}">
+                    {{ genre }} <span class="remove-item" onclick="removeItem(this, 'selected_genres', 'fav_genres_input')">X</span>
+                </span>
+                {% endfor %}
+            </div>
+            
+            <input type="hidden" name="fav_genres" id="fav_genres_input" value='{{ user.fav_genres | tojson | safe }}'>
+            <!-- <input type="hidden" name="fav_genres" id="fav_genres_input" value='{{ (user.fav_genres if user.fav_genres else []) | tojson | safe }}'> -->
+
+        </div>
+
+
+
+
+
+
+
+
+        <button type="submit" class="btn btn-primary">Save Profile</button>
+    </form>
+    <div class="mt-3">
+        <a href="{{ url_for('profile') }}" class="btn btn-secondary">Back to Profile</a>
+    </div>
+</div>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script>
+
+        let cropper;
+        let croppedBlob;
+    
+        function previewFile() {
+            const fileInput = document.getElementById("profile_pic");
+            const previewImg = document.getElementById("profile_pic_preview");
+            const cropContainer = document.getElementById("crop-container");
+            const canvas = document.getElementById("croppedCanvas");
+    
+            const file = fileInput.files[0];
+            if (!file) return;
+    
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = "none"; // Hide original preview
+                cropContainer.style.display = "block"; // Show cropping UI
+    
+                if (cropper) cropper.destroy(); // Reset cropper if it exists
+                cropper = new Cropper(canvas, {
+                    aspectRatio: 1, // Square crop
+                    viewMode: 1
+                });
+    
+                const img = new Image();
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    cropper.replace(e.target.result);
+                };
+                img.src = e.target.result;
+            };
+    
+            reader.readAsDataURL(file);
+        }
+    
+        function cropImage() {
+            if (!cropper) return;
+            cropper.getCroppedCanvas({ width: 300, height: 300 }).toBlob((blob) => {
+                croppedBlob = blob;
+    
+                const previewImg = document.getElementById("profile_pic_preview");
+                previewImg.src = URL.createObjectURL(blob);
+                previewImg.style.display = "block";
+    
+                document.getElementById("crop-container").style.display = "none"; // Hide cropping UI
+            }, "image/jpeg");
+        }
+    
+        function saveProfile(event) {
+            event.preventDefault(); // Stop form from submitting immediately
+    
+            const formData = new FormData(event.target);
+    
+            // If an image was cropped, append it to the form data
+            if (croppedBlob) {
+                formData.append("profile_pic", croppedBlob, "profile.jpg");
+            }
+    
+            fetch(event.target.action, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.text())
+            .then(() => {
+                alert("✅ Profile updated successfully!");
+                window.location.reload(); // Refresh page to see changes
+            })
+            .catch(error => {
+                console.error("❌ Failed to save profile:", error);
+                alert("❌ Failed to save profile.");
+            });
+        }
+   
+    
+
+
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            setupSearch("movie_search", "/search/movies", "selected_movies", "fav_movies_input", "movie_results");
+            setupSearch("actor_search", "/search/actors", "selected_actors", "fav_actors_input", "actor_results");
+        
+            // ✅ NEW: Genre search setup
+            setupGenreSearch("genre_search", "selected_genres", "fav_genres_input", "genre_results");
+        
+            restoreSelections("fav_movies_input", "selected_movies");
+            restoreSelections("fav_actors_input", "selected_actors");
+            restoreSelections("fav_genres_input", "selected_genres"); // ✅ NEW: Restore genres
+        
+            document.querySelector("form").addEventListener("submit", function (event) {
+                updateAllHiddenInputs();  
+        
+                let moviesCount = document.querySelectorAll("#selected_movies .selected-item").length;
+                let actorsCount = document.querySelectorAll("#selected_actors .selected-item").length;
+                let genresCount = document.querySelectorAll("#selected_genres .selected-item").length; // ✅ NEW
+        
+                // **Fix: Show error and stop form submission if too many selections**
+                if (moviesCount > 3 || actorsCount > 3 || genresCount > 5) { // ✅ NEW: Genre validation
+                    alert("❌ Error: You can only select up to 3 movies, 3 actors, and 5 genres!");
+                    event.preventDefault();  // STOP form submission!
+                    return;
+                }
+            });
+        });
+        
+
+    
+    function setupSearch(inputId, url, targetDivId, hiddenInputId, resultsDivId) {
+        let inputElement = document.getElementById(inputId);
+        let resultsDiv = document.getElementById(resultsDivId);
+        let targetDiv = document.getElementById(targetDivId);
+    
+        inputElement.addEventListener("input", function () {
+            let query = inputElement.value;
+            if (query.length < 2) {
+                resultsDiv.style.display = "none";
+                return;
+            }
+    
+            fetch(`${url}?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsDiv.innerHTML = "";
+                    if (data.length > 0) {
+                        resultsDiv.style.display = "block";
+                        data.forEach(item => {
+                            let div = document.createElement("div");
+                            div.classList.add("dropdown-item");
+                            div.innerText = item.title || item.name;
+    
+                            div.onclick = () => {
+                                // ✅ If user has already selected 3, show error and clear input
+                                if (targetDiv.childElementCount >= 3) {
+                                    alert("❌ You already have 3 selections! Remove one before adding another.");
+                                    inputElement.value = "";  // ✅ Clears search bar
+                                    resultsDiv.style.display = "none";  // ✅ Close dropdown
+                                    return;
+                                }
+    
+                                addItem(item.title || item.name, targetDivId, hiddenInputId);
+                                inputElement.value = "";  // ✅ Clears search bar after selection
+                                resultsDiv.style.display = "none";  // ✅ Close dropdown after adding
+                            };
+    
+                            resultsDiv.appendChild(div);
+                        });
+                    } else {
+                        resultsDiv.style.display = "none";
+                    }
+                })
+                .catch(error => console.error("Error fetching search results:", error));
+        });
+    
+        // Hide dropdown if clicked outside
+        document.addEventListener("click", function (event) {
+            if (!inputElement.contains(event.target) && !resultsDiv.contains(event.target)) {
+                resultsDiv.style.display = "none";
+            }
+        });
+    }
+    
+
+
+
+
+    function setupGenreSearch(inputId, targetDivId, hiddenInputId, resultsDivId) {
+        let inputElement = document.getElementById(inputId);
+        let resultsDiv = document.getElementById(resultsDivId);
+        let targetDiv = document.getElementById(targetDivId);
+    
+        inputElement.addEventListener("input", function () {
+            let query = inputElement.value.toLowerCase();
+            resultsDiv.innerHTML = "";
+            if (query.length < 2) {
+                resultsDiv.style.display = "none";
+                return;
+            }
+    
+            // ✅ Fetch Genres from TMDB API
+            fetch(`/search/genres?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsDiv.innerHTML = "";
+                    if (data.length > 0) {
+                        resultsDiv.style.display = "block";
+                        data.forEach(genre => {
+                            let div = document.createElement("div");
+                            div.classList.add("dropdown-item");
+                            div.innerText = genre.name; // ✅ Fetch dynamic genre names
+                            div.onclick = () => {
+                                addItem(genre.name, targetDivId, hiddenInputId);
+                                inputElement.value = "";
+                                resultsDiv.style.display = "none";
+                            };
+                            resultsDiv.appendChild(div);
+                        });
+                    } else {
+                        resultsDiv.style.display = "none";
+                    }
+                })
+                .catch(error => console.error("Error fetching genres:", error));
+        });
+    
+        document.addEventListener("click", function (event) {
+            if (!inputElement.contains(event.target) && !resultsDiv.contains(event.target)) {
+                resultsDiv.style.display = "none";
+            }
+        });
+    }
+    
+    
+
+
+    
+    function addItem(item, targetDivId, hiddenInputId) {
+        let targetDiv = document.getElementById(targetDivId);
+        let hiddenInput = document.getElementById(hiddenInputId);
+    
+        let existingCount = targetDiv.childElementCount;
+    
+        // ✅ Ensure warning flag only applies on selection attempts, NOT on page refresh
+        if (existingCount >= 3) {
+            sessionStorage.removeItem("pageLoaded"); // Reset flag to prevent false triggers
+    
+            if (!sessionStorage.getItem("alreadyWarned")) {
+                alert("❌ You already have 3 selections! Remove one before adding another.");
+                sessionStorage.setItem("alreadyWarned", "true");  // ✅ Store flag in session
+            }
+            return;  // ⛔ STOP! Do NOT allow another selection
+        }
+    
+        // ✅ Prevent duplicates
+        let exists = [...targetDiv.children].some(span => span.dataset.value === item);
+        if (!exists) {
+            let span = document.createElement("span");
+            span.classList.add("selected-item");
+            span.dataset.value = item;
+            span.innerHTML = `${item} <span class="remove-item" onclick="removeItem(this, '${targetDivId}', '${hiddenInputId}')">X</span>`;
+            targetDiv.appendChild(span);
+            updateHiddenInput(targetDiv, hiddenInput);
+            sessionStorage.removeItem("alreadyWarned"); // ✅ Reset warning flag if a valid item is added
+        }
+    }
+    
+    
+    
+    
+    
+
+    function updateAllHiddenInputs() {
+        updateHiddenInput(document.getElementById("selected_movies"), document.getElementById("fav_movies_input"));
+        updateHiddenInput(document.getElementById("selected_actors"), document.getElementById("fav_actors_input"));
+    }
+    
+    function updateHiddenInput(targetDiv, hiddenInput) {
+        let values = [...targetDiv.children].map(span => span.dataset.value);
+        hiddenInput.value = JSON.stringify(values); // ✅ Store JSON format (Fixing issue)
+    }
+
+    
+    function removeItem(element, targetDivId, hiddenInputId) {
+        let targetDiv = document.getElementById(targetDivId);
+        let hiddenInput = document.getElementById(hiddenInputId);
+    
+        element.parentElement.remove(); // ✅ Remove the selection visually
+    
+        updateHiddenInput(targetDiv, hiddenInput); // ✅ Ensure removal is saved properly
+    }
+
+
+
+
+    
+    // ✅ FIX: Restores selections correctly when the page is reloaded
+    function restoreSelections(hiddenInputId, targetDivId) {
+        let targetDiv = document.getElementById(targetDivId);
+        let hiddenInput = document.getElementById(hiddenInputId);
+    
+        let storedValues = hiddenInput.value;
+        if (storedValues) {
+            try {
+                let values = JSON.parse(storedValues);
+                values.forEach(value => addItem(value, targetDivId, hiddenInputId));
+            } catch (error) {
+                console.error("Error parsing stored values:", error);
+            }
+        }
+    }
+    
+    
+
+
+    
+    // **Fix: Prevents page reload on form submit**
+    function saveProfile(event) {
+        event.preventDefault(); // ⛔ Prevent default form submission
+    
+        updateAllHiddenInputs();  
+    
+        let moviesCount = document.querySelectorAll("#selected_movies .selected-item").length;
+        let actorsCount = document.querySelectorAll("#selected_actors .selected-item").length;
+    
+        // ✅ **Validation: Prevent more than 3 selections**
+        if (moviesCount > 3 || actorsCount > 3) {
+            alert("❌ You already have 3 selections. Remove one if you want to add a new selection.");
+            return;  // ⛔ STOP - Do NOT proceed to save!
+        }
+    
+        // ✅ **Only show success message if the form is actually saved**
+        var form = event.target;
+        var formData = new FormData(form);
+    
+        fetch(form.action, {
+            method: "POST",
+            body: formData
+        }).then(response => response.text())
+          .then(html => {
+              alert("✅ Profile updated successfully!");  // ✅ Success message only when saved properly
+          }).catch(error => {
+              console.error("❌ Failed to save profile:", error);
+              alert("❌ Failed to save profile.");
+          });
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <style>
+        #profile_pic_display {
+            width: 300px;
+            height: 300px;
+            object-fit: contain;
+            border: 3px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 class="mt-5">Profile Page</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Display User Info -->
+    <div class="user-info">
+        <!-- <img id="profile_pic_display" src="{{ user.profile_pic_url if user.profile_pic_url else 'https://via.placeholder.com/200' }}" alt="Profile Picture"> -->
+        <img id="profile_pic_display" src="{{ user.profile_pic_url if user.profile_pic_url else 'https://via.placeholder.com/200' }}">
+
+        <h3>Username: {{ user.username }}</h3>
+        <p><strong>Age:</strong> {{ age }} years old</p>
+        <p><strong>Bio:</strong> {{ user.bio }}</p>
+        <p><strong>Fun Fact:</strong> {{ user.fun_fact }}</p>
+        <p><strong>Gender:</strong> {{ user.gender }}</p>
+        <p><strong>Looking for:</strong> {{ gender_preference }}</p>
+
+
+
+        
+    
+        <p><strong>Top Movies:</strong> 
+            {% for movie in user.fav_movies %}
+                {{ movie }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    
+        <p><strong>Top Actors:</strong> 
+            {% for actor in user.fav_actors %}
+                {{ actor }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        <p><strong>Favorite Genres:</strong> 
+            {% if user.fav_genres %}
+                {% for genre in user.fav_genres %}
+                    {{ genre }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            {% else %}
+                All Movies
+            {% endif %}
+        </p>
+    </div>
+    
+
+
+    <button type="button" class="btn btn-primary" data-url="{{ url_for('edit_profile') }}">Edit Profile</button>
+    <button type="button" class="btn btn-secondary" data-url="{{ url_for('swipe_movies') }}" id="goToSwipe" disabled>Go to Movie Swipes</button>
+    <button type="button" class="btn btn-danger" id="logoutBtn">Logout</button>
+    
+
+    
+    <script>
+        document.getElementById("logoutBtn").addEventListener("click", function () {
+            window.location.href = "{{ url_for('logout') }}"; // Redirects to logout route
+        });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('button[data-url]').forEach(button => {
+            button.addEventListener('click', function() {
+                window.location.href = this.getAttribute('data-url');
+            });
+        });
+
+        const bio = "{{ user.bio }}";
+        const funFact = "{{ user.fun_fact }}";
+        const profilePic = "{{ user.profile_pic_url }}";
+        const goToSwipeButton = document.getElementById('goToSwipe');
+
+        if (bio && funFact && profilePic) {
+            goToSwipeButton.disabled = false;
+        }
+    });
+    </script>
+
+    
+
+</body>
+</html>
