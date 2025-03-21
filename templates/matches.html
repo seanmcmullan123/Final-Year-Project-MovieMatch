@@ -53,14 +53,13 @@
                     </div>
                     
                     <div class="match-actions">
-                        <!-- ✅ Corrected Chat Button -->
+                        <!-- ✅ Chat Button -->
                         <a href="{{ url_for('chat', matched_user_id=match['user_id']) }}" class="btn btn-primary">Message</a>
 
-                        <!-- ✅ Corrected Match Removal Form -->
-                        <form action="{{ url_for('remove_match') }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this match?');">
-                            <input type="hidden" name="match_user_id" value="{{ match['user_id'] }}">
-                            <button type="submit" class="btn btn-danger">Remove</button>
-                        </form>
+                        <!-- ✅ Updated Remove Button -->
+                        <button class="btn btn-danger remove-btn" data-user-id="{{ match['user_id'] }}">
+                            Remove
+                        </button>
                     </div>
                 </div>
             {% endfor %}
@@ -70,5 +69,34 @@
 
         <a href="{{ url_for('swipe_movies') }}" class="btn btn-secondary mt-3">Back to Swiping</a>
     </div>
+
+    <!-- ✅ Match Removal JavaScript -->
+    <script>
+        document.querySelectorAll(".remove-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                const matchedUserId = this.getAttribute("data-user-id");
+
+                if (confirm("Are you sure you want to remove this match?")) {
+                    fetch("/remove_match", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ matched_user_id: matchedUserId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // ✅ Reload page to reflect change
+                            window.location.href = "/matches";
+                        } else {
+                            alert("Error removing match.");
+                        }
+                    })
+                    .catch(error => console.error("Error removing match:", error));
+                }
+            });
+        });
+    </script>
 </body>
 </html>

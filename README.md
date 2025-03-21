@@ -25,3 +25,17 @@ DefaultEndpointsProtocol=https;AccountName=moviematchstorageaccount;AccountKey=g
 
 
 
+update code and psuh to github
+run this:
+
+git add .
+git commit -m "Describe what changed"
+git push origin main
+
+
+
+
+
+
+
+

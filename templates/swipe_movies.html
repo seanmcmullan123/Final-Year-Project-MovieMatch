@@ -18,7 +18,7 @@
         /* Movie poster */
         .movie-poster {
             max-width: 100%;
-            height: 400px; /* Fixed height for better layout */
+            height: 400px;
             object-fit: cover;
             border-radius: 10px;
             margin-bottom: 10px;
@@ -101,17 +101,14 @@
     <div class="alert alert-warning mt-4 text-center">No more movies available to swipe.</div>
     {% endif %}
 
-
+    <!-- ✅ Matches Button with Auto-Updated Counter -->
     <div class="text-center mt-3">
         <a href="{{ url_for('view_matches') }}" class="btn btn-primary position-relative">
-            Matches <span class="badge badge-light">{{ matches_count }}</span>
+            Matches <span id="match-count" class="badge badge-light">{{ matches_count }}</span>
         </a>
     </div>
-    
-    
-    
 
-    <!-- Back to Profile -->
+    <!-- ✅ Back to Profile Button -->
     <div class="mt-3 text-center">
         <form action="{{ url_for('profile') }}">
             <button type="submit" class="btn btn-secondary">Back to Profile</button>
@@ -119,8 +116,7 @@
     </div>    
 </div>
 
-<!-- ✅ JavaScript for Handling Swipes -->
-
+<!-- ✅ JavaScript for Handling Swipes & Auto-Updating Match Count -->
 <script>
     function swipeMovie(action) {
         fetch("{{ url_for('swipe_movies') }}", {
@@ -141,6 +137,21 @@
         })
         .catch(error => console.error("Error:", error));
     }
+
+    function updateMatchCount() {
+        fetch("{{ url_for('swipe_movies') }}", {
+            method: "GET",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("match-count").innerText = data.matches_count;
+        })
+        .catch(error => console.error("Error updating match count:", error));
+    }
+
+    // ✅ Auto-update match count every 5 seconds
+    setInterval(updateMatchCount, 5000);
 </script>
 
 

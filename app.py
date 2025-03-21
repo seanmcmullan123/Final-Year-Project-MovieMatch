@@ -201,6 +201,71 @@ def profile():
 
 
 
+
+
+
+
+
+
+
+
+# @app.route('/delete_account', methods=['POST'])
+# def delete_account():
+#     if 'user_id' not in session:
+#         return jsonify({"success": False, "error": "Not logged in"}), 401
+
+#     user_id = ObjectId(session['user_id'])
+
+#     # ✅ Delete user from users collection
+#     mongo.db.users.delete_one({"_id": user_id})
+
+#     # ✅ Remove user from matches/swipes/messages
+#     mongo.db.swipes.delete_many({"user_id": user_id})
+#     mongo.db.matches.delete_many({"$or": [{"user1": user_id}, {"user2": user_id}]})
+#     mongo.db.messages.delete_many({"$or": [{"sender": user_id}, {"receiver": user_id}]})
+
+#     # ✅ Clear session
+#     session.clear()
+
+#     return jsonify({"success": True})
+
+
+
+
+
+
+
+@app.route('/delete_account', methods=['POST'])
+def delete_account():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+
+    user_id = ObjectId(session['user_id'])
+
+    # ✅ Delete user from users collection
+    mongo.db.users.delete_one({"_id": user_id})
+
+    # ✅ Remove user from matches, swipes, and messages
+    mongo.db.swipes.delete_many({"user_id": user_id})
+    mongo.db.matches.delete_many({"$or": [{"user_1": user_id}, {"user_2": user_id}]})  # 🔄 FIXED field names
+    mongo.db.messages.delete_many({"$or": [{"sender": user_id}, {"receiver": user_id}]})
+
+    # ✅ Clear session
+    session.clear()
+
+    return jsonify({"success": True})
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
     if 'user_id' not in session:
@@ -335,10 +400,24 @@ def swipe_movies():
     user_id = ObjectId(session['user_id'])
     user = mongo.db.users.find_one({"_id": user_id})
 
-    # ✅ Count User's Matches for the Notification Badge
-    match_count = mongo.db.matches.count_documents({
+
+    # ✅ Fetch matches where current user is involved
+    all_matches = list(mongo.db.matches.find({
         "$or": [{"user_1": user_id}, {"user_2": user_id}]
-    })
+    }))
+
+    valid_match_count = 0
+
+    for match in all_matches:
+        other_user_id = match["user_2"] if match["user_1"] == user_id else match["user_1"]
+
+        # ✅ If the other user doesn't exist, REMOVE the match from the DB
+        if not mongo.db.users.find_one({"_id": other_user_id}):
+            mongo.db.matches.delete_one({"_id": match["_id"]})  # Remove invalid match
+        else:
+            valid_match_count += 1  # ✅ Count only active matches
+
+    matches_count = valid_match_count
 
     # ✅ Ensure user profile is complete before swiping
     if not (user.get('bio') and user.get('fun_fact') and user.get('profile_pic_url')):
@@ -495,6 +574,18 @@ def swipe_movies():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/swipe_action', methods=['POST'])
 def swipe_action():
     if 'user_id' not in session:
@@ -568,27 +659,61 @@ def view_matches():
 
 
 
+# @app.route('/remove_match', methods=['POST'])
+# def remove_match():
+#     if 'user_id' not in session:
+#         return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+#     user_id = ObjectId(session['user_id'])
+#     data = request.get_json()
+#     match_user_id = data.get("match_user_id")
+
+#     if not match_user_id:
+#         return jsonify({"success": False, "error": "Match user ID missing"}), 400
+
+#     # ✅ Remove the match where the logged-in user is either user_1 or user_2
+#     mongo.db.matches.delete_one({
+#         "$or": [
+#             {"user_1": user_id, "user_2": ObjectId(match_user_id)},
+#             {"user_1": ObjectId(match_user_id), "user_2": user_id}
+#         ]
+#     })
+
+#     return jsonify({"success": True})  # ✅ Return success response
+
+
+
+
 @app.route('/remove_match', methods=['POST'])
 def remove_match():
     if 'user_id' not in session:
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
-    user_id = ObjectId(session['user_id'])
     data = request.get_json()
-    match_user_id = data.get("match_user_id")
+    matched_user_id = data.get("matched_user_id")
 
-    if not match_user_id:
-        return jsonify({"success": False, "error": "Match user ID missing"}), 400
+    if not matched_user_id:
+        return jsonify({"success": False, "error": "Missing matched user ID"}), 400
 
-    # ✅ Remove the match where the logged-in user is either user_1 or user_2
-    mongo.db.matches.delete_one({
+    user_id = ObjectId(session['user_id'])
+    matched_user_id = ObjectId(matched_user_id)
+
+    # ✅ Remove the match from either direction
+    result = mongo.db.matches.delete_one({
         "$or": [
-            {"user_1": user_id, "user_2": ObjectId(match_user_id)},
-            {"user_1": ObjectId(match_user_id), "user_2": user_id}
+            {"user_1": user_id, "user_2": matched_user_id},
+            {"user_1": matched_user_id, "user_2": user_id}
         ]
     })
 
-    return jsonify({"success": True})  # ✅ Return success response
+    if result.deleted_count > 0:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "error": "Match not found"}), 404
+
+
+
+
 
 
 
@@ -671,7 +796,6 @@ def chat(matched_user_id):
             return jsonify({"success": True, "text": message_text, "sender": str(user_id)})
 
     return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
-
 
 
 
