@@ -14,6 +14,8 @@ from flask import jsonify
 from flask import Flask, request, jsonify, redirect, url_for, flash, render_template
 from bson.objectid import ObjectId
 from api_helpers import search_movies, search_actors, search_genres, search_popular_movies_by_genre
+from better_profanity import profanity
+import re  # For email and password pattern checking
 
 
 # Initialize Flask app
@@ -46,31 +48,123 @@ def home():
 
 
 
+# @app.route('/register', methods=['GET', 'POST'])
+# def register():
+#     if request.method == 'POST':
+#         username = request.form['username']
+#         email = request.form['email']
+#         password = request.form['password']
+#         dob_str = request.form['dob']  # Date of birth as string
+#         gender = request.form.get('gender')  # ✅ Get Gender Selection
+
+#         if not username or not email or not password or not dob_str or not gender:
+#             flash("Please fill out all fields, including gender.", "danger")
+#             return redirect(url_for('register'))
+
+#         dob_date = datetime.strptime(dob_str, '%Y-%m-%d')
+#         age = calculate_age(dob_date)
+#         if age < 18:
+#             flash("You must be at least 18 years old to register.", "danger")
+#             return redirect(url_for('register'))
+
+#         existing_user = mongo.db.users.find_one({"email": email})
+#         if existing_user:
+#             flash("Username or email already exists", "danger")
+#             return redirect(url_for('register'))
+
+#         # Retrieve and update the user_id counter
+#         user_id_counter = mongo.db.counters.find_one_and_update(
+#             {"id": "user_id"},
+#             {"$inc": {"sequence_value": 1}},
+#             new=True
+#         )
+
+#         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+
+#         # ✅ Store the new user in MongoDB with gender
+#         mongo.db.users.insert_one({
+#             "user_id": user_id_counter['sequence_value'],
+#             "username": username,
+#             "email": email,
+#             "password": hashed_password,
+#             "dob": dob_date,
+#             "gender": gender,  # ✅ Store Gender
+#         })
+
+#         flash("Registration successful!", "success")
+#         return redirect(url_for('login'))
+    
+#     return render_template('register.html', autocomplete='off')
+
+
+
+
+
+
+
+
+
+
+
+
+profanity.load_censor_words()
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
+        username = request.form['username'].strip()
+        email = request.form['email'].strip()
         password = request.form['password']
-        dob_str = request.form['dob']  # Date of birth as string
-        gender = request.form.get('gender')  # ✅ Get Gender Selection
+        dob_str = request.form['dob']
+        gender = request.form.get('gender')
 
+        # ✅ Check all fields are filled
         if not username or not email or not password or not dob_str or not gender:
             flash("Please fill out all fields, including gender.", "danger")
             return redirect(url_for('register'))
 
-        dob_date = datetime.strptime(dob_str, '%Y-%m-%d')
+        # ✅ Profanity check
+        if profanity.contains_profanity(username) or profanity.contains_profanity(email) or profanity.contains_profanity(password):
+            flash("Username, email, or password contains inappropriate language.", "danger")
+            return redirect(url_for('register'))
+
+        # ✅ Username: minimum 6 characters
+        if len(username) < 6:
+            flash("Username must be at least 6 characters long.", "danger")
+            return redirect(url_for('register'))
+
+        # ✅ Email: basic format + minimum 2 characters before '@' and valid domain
+        if not re.match(r"^[\w\.-]{2,}@[\w\.-]+\.(com|net|org|co\.uk|ie|edu|gov|info|io)$", email):
+            flash("Invalid email format. Please use a valid domain (e.g., gmail.com).", "danger")
+            return redirect(url_for('register'))
+
+        # ✅ Password: at least 8 characters and contains a number
+        if len(password) < 8 or not re.search(r"\d", password):
+            flash("Password must be at least 8 characters and contain a number.", "danger")
+            return redirect(url_for('register'))
+
+        # ✅ Age Check: Must be 18 or older
+        try:
+            dob_date = datetime.strptime(dob_str, '%Y-%m-%d')
+        except ValueError:
+            flash("Invalid date format.", "danger")
+            return redirect(url_for('register'))
+
         age = calculate_age(dob_date)
         if age < 18:
             flash("You must be at least 18 years old to register.", "danger")
             return redirect(url_for('register'))
 
-        existing_user = mongo.db.users.find_one({"email": email})
-        if existing_user:
-            flash("Username or email already exists", "danger")
+        # ✅ Check if username or email already exists
+        if mongo.db.users.find_one({"username": username}):
+            flash("Username already exists.", "danger")
             return redirect(url_for('register'))
 
-        # Retrieve and update the user_id counter
+        if mongo.db.users.find_one({"email": email}):
+            flash("Email already exists.", "danger")
+            return redirect(url_for('register'))
+
+        # ✅ Get user_id
         user_id_counter = mongo.db.counters.find_one_and_update(
             {"id": "user_id"},
             {"$inc": {"sequence_value": 1}},
@@ -79,20 +173,30 @@ def register():
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # ✅ Store the new user in MongoDB with gender
+        # ✅ Insert user into DB
         mongo.db.users.insert_one({
             "user_id": user_id_counter['sequence_value'],
             "username": username,
             "email": email,
             "password": hashed_password,
             "dob": dob_date,
-            "gender": gender,  # ✅ Store Gender
+            "gender": gender
         })
 
         flash("Registration successful!", "success")
         return redirect(url_for('login'))
-    
+
     return render_template('register.html', autocomplete='off')
+
+
+
+
+
+
+
+
+
+
 
 
 
