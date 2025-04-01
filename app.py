@@ -16,6 +16,10 @@ from bson.objectid import ObjectId
 from api_helpers import search_movies, search_actors, search_genres, search_popular_movies_by_genre
 from better_profanity import profanity
 import re  # For email and password pattern checking
+import base64
+from PIL import Image
+from io import BytesIO
+from azure.storage.blob import ContentSettings
 
 
 # Initialize Flask app
@@ -276,6 +280,9 @@ def profile():
             movies = search_movies(movie_query) if movie_query else []
             actors = search_actors(actor_query) if actor_query else []
 
+        # ✅ Add a timestamp to force image reload on the client
+        timestamp = datetime.utcnow().timestamp()
+
         return render_template(
             'profile.html',
             user=user,
@@ -284,7 +291,8 @@ def profile():
             actors=actors,
             genres=user["fav_genres"],
             gender=user["gender"],
-            gender_preference=user["gender_preference"]  # ✅ Pass gender preference
+            gender_preference=user["gender_preference"],
+            timestamp=timestamp  # ✅ Pass timestamp to template
         )
 
     except Exception as e:
@@ -298,42 +306,9 @@ def profile():
             actors=[],
             genres=[],
             gender="Not Specified",
-            gender_preference="Both"
+            gender_preference="Both",
+            timestamp=datetime.utcnow().timestamp()  # ✅ Even on error page
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-# @app.route('/delete_account', methods=['POST'])
-# def delete_account():
-#     if 'user_id' not in session:
-#         return jsonify({"success": False, "error": "Not logged in"}), 401
-
-#     user_id = ObjectId(session['user_id'])
-
-#     # ✅ Delete user from users collection
-#     mongo.db.users.delete_one({"_id": user_id})
-
-#     # ✅ Remove user from matches/swipes/messages
-#     mongo.db.swipes.delete_many({"user_id": user_id})
-#     mongo.db.matches.delete_many({"$or": [{"user1": user_id}, {"user2": user_id}]})
-#     mongo.db.messages.delete_many({"$or": [{"sender": user_id}, {"receiver": user_id}]})
-
-#     # ✅ Clear session
-#     session.clear()
-
-#     return jsonify({"success": True})
-
-
 
 
 
@@ -364,6 +339,99 @@ def delete_account():
 
 
 
+# @app.route('/edit_profile', methods=['GET', 'POST'])
+# def edit_profile():
+#     if 'user_id' not in session:
+#         flash("You must be logged in to edit your profile.", "danger")
+#         return redirect(url_for('login'))
+
+#     user_id = session['user_id']
+#     user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+
+#     # ✅ Ensure all fields exist and default to empty lists
+#     user["fav_movies"] = user.get("fav_movies", [])
+#     user["fav_actors"] = user.get("fav_actors", [])
+#     user["fav_genres"] = user.get("fav_genres", [])
+#     user["gender_preference"] = user.get("gender_preference", "Both")  # ✅ Default to "Both" if not set
+
+#     if request.method == 'POST':
+#         profile_pic_file = request.files.get('profile_pic')
+#         profile_pic_url = user.get("profile_pic_url")
+
+#         if profile_pic_file:
+#             filename = f"{user_id}.jpg"  # Save file as {user_id}.jpg for consistency
+#             blob_client = container_client.get_blob_client(blob=filename)
+#             blob_client.upload_blob(profile_pic_file.read(), overwrite=True)
+#             profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+
+#         username = request.form.get('username').strip()
+#         bio = request.form.get('bio')
+#         fun_fact = request.form.get('fun_fact')
+#         gender_preference = request.form.get('gender_preference', 'Both').strip()  # ✅ Get gender preference
+
+#         # ✅ Validate Username
+#         if not username:
+#             flash("Username cannot be empty!", "danger")
+#             return redirect(url_for('edit_profile'))
+
+#         # ✅ Check if username already exists (prevent duplicates)
+#         existing_user = mongo.db.users.find_one({"username": username})
+#         if existing_user and str(existing_user["_id"]) != user_id:
+#             flash("Username already taken. Choose another one!", "danger")
+#             return redirect(url_for('edit_profile'))
+
+#         # ✅ Force JSON parsing to properly detect empty lists
+#         fav_movies = request.form.get("fav_movies", "[]").strip()
+#         fav_actors = request.form.get("fav_actors", "[]").strip()
+#         fav_genres = request.form.get("fav_genres", "[]").strip()
+
+#         try:
+#             fav_movies = json.loads(fav_movies) if fav_movies else []
+#             fav_actors = json.loads(fav_actors) if fav_actors else []
+#             fav_genres = json.loads(fav_genres) if fav_genres else []
+#         except json.JSONDecodeError:
+#             fav_movies, fav_actors, fav_genres = [], [], []
+
+#         # ✅ Ensure valid format and enforce limits
+#         fav_movies = [m.strip() for m in fav_movies if m.strip()][:3]
+#         fav_actors = [a.strip() for a in fav_actors if a.strip()][:3]
+#         fav_genres = [g.strip() for g in fav_genres if g.strip()][:5]
+
+#         update_data = {
+#             "username": username,
+#             "bio": bio,
+#             "fun_fact": fun_fact,
+#             "fav_movies": fav_movies,
+#             "fav_actors": fav_actors,
+#             "fav_genres": fav_genres,
+#             "profile_pic_url": profile_pic_url,
+#             "gender_preference": gender_preference  # ✅ Add gender preference to DB
+#         }
+
+#         print("✅ DEBUG - Final Data to Save:", update_data)  # Debugging logs
+
+#         mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+#         flash("Profile updated successfully!", "success")
+#         return redirect(url_for('edit_profile'))
+
+#     existing_movies = user.get("fav_movies", [])
+#     existing_actors = user.get("fav_actors", [])
+#     existing_genres = user.get("fav_genres", [])
+#     existing_gender_preference = user.get("gender_preference", "Both")  # ✅ Fetch stored gender preference
+
+#     return render_template(
+#         "profile_edit.html",
+#         user=user,
+#         movies=existing_movies,
+#         actors=existing_actors,
+#         genres=existing_genres,
+#         gender_preference=existing_gender_preference  # ✅ Pass gender preference to HTML
+#     )
+
+
+
+
+
 
 
 
@@ -385,31 +453,167 @@ def edit_profile():
     user["fav_genres"] = user.get("fav_genres", [])
     user["gender_preference"] = user.get("gender_preference", "Both")  # ✅ Default to "Both" if not set
 
+    # if request.method == 'POST':
+    #     profile_pic_file = request.files.get('profile_pic')
+    #     profile_pic_url = user.get("profile_pic_url")
+
+    #     if profile_pic_file:
+    #         filename = f"{user_id}.jpg"  # Save file as {user_id}.jpg for consistency
+    #         blob_client = container_client.get_blob_client(blob=filename)
+    #         blob_client.upload_blob(profile_pic_file.read(), overwrite=True)
+    #         profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+
+
+
+
+
+    # if request.method == 'POST':
+    #     profile_pic_url = user.get("profile_pic_url")
+    #     profile_pic_file = request.files.get('profile_pic')
+
+    #     # ✅ Handle base64 cropped image if available
+    #     cropped_data = request.form.get('cropped_image_data')
+    #     if cropped_data:
+    #         try:
+    #             header, encoded = cropped_data.split(",", 1)
+    #             decoded = base64.b64decode(encoded)
+    #             image = Image.open(BytesIO(decoded))
+
+    #             # Convert and upload to Azure Blob Storage
+    #             filename = f"{user_id}.jpg"
+    #             # blob_client = container_client.get_blob_client(blob=filename)
+    #             blob_client.upload_blob(
+    #             buffer.read(),
+    #             overwrite=True,
+    #             content_settings=ContentSettings(content_type='image/jpeg')
+    #         )
+
+
+    #             cropped_data = request.form.get('cropped_image_data')
+    #             print("Cropped data exists:", bool(cropped_data))
+
+    #             print("✅ Uploaded new cropped image to Azure Blob!")
+    #             print("✅ Cropped image URL:", profile_pic_url)
+
+
+
+
+    #             buffer = BytesIO()
+    #             image.save(buffer, format="JPEG")
+    #             buffer.seek(0)
+
+    #             blob_client.upload_blob(buffer.read(), overwrite=True)
+    #             profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+
+    #         except Exception as e:
+    #             flash(f"Error processing cropped image: {str(e)}", "danger")
+
+    #     # ✅ Fallback: Handle standard file upload if no cropped data
+    #     elif profile_pic_file:
+    #         filename = f"{user_id}.jpg"  # Save file as {user_id}.jpg for consistency
+    #         blob_client = container_client.get_blob_client(blob=filename)
+    #         blob_client.upload_blob(profile_pic_file.read(), overwrite=True)
+    #         profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+
+
     if request.method == 'POST':
-        profile_pic_file = request.files.get('profile_pic')
         profile_pic_url = user.get("profile_pic_url")
+        profile_pic_file = request.files.get('profile_pic')
 
-        if profile_pic_file:
-            filename = f"{user_id}.jpg"  # Save file as {user_id}.jpg for consistency
-            blob_client = container_client.get_blob_client(blob=filename)
-            blob_client.upload_blob(profile_pic_file.read(), overwrite=True)
-            profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+        # ✅ Handle base64 cropped image if available
+        cropped_data = request.form.get('cropped_image_data')
+        if cropped_data:
+            try:
+                print("⚠️ Cropped image data received.")
+                header, encoded = cropped_data.split(",", 1)
+                decoded = base64.b64decode(encoded)
+                image = Image.open(BytesIO(decoded))
 
-        username = request.form.get('username').strip()
-        bio = request.form.get('bio')
-        fun_fact = request.form.get('fun_fact')
-        gender_preference = request.form.get('gender_preference', 'Both').strip()  # ✅ Get gender preference
+                # Prepare filename and blob client
+                filename = f"{user_id}.jpg"
+                blob_client = container_client.get_blob_client(blob=filename)
 
-        # ✅ Validate Username
-        if not username:
-            flash("Username cannot be empty!", "danger")
+                # Save image to BytesIO buffer
+                buffer = BytesIO()
+                image.save(buffer, format="JPEG")
+                buffer.seek(0)
+
+                # Upload to Azure Blob with content type set
+                blob_client.upload_blob(
+                    buffer.read(),
+                    overwrite=True,
+                    content_settings=ContentSettings(content_type='image/jpeg')
+                )
+
+                # Update the profile_pic_url
+                profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+                print("✅ Uploaded cropped image to Azure:", profile_pic_url)
+
+            except Exception as e:
+                print("❌ Cropped image upload failed:", e)
+                flash(f"Error processing cropped image: {str(e)}", "danger")
+
+        # ✅ Fallback: Handle standard file upload if no cropped image was provided
+        elif profile_pic_file:
+            try:
+                filename = f"{user_id}.jpg"
+                blob_client = container_client.get_blob_client(blob=filename)
+                blob_client.upload_blob(
+                    profile_pic_file.read(),
+                    overwrite=True,
+                    content_settings=ContentSettings(content_type='image/jpeg')
+                )
+                profile_pic_url = f"https://moviematchstorageaccount.blob.core.windows.net/user-profile-pics/{filename}"
+                print("✅ Uploaded standard profile image to Azure:", profile_pic_url)
+            except Exception as e:
+                print("❌ Standard image upload failed:", e)
+                flash(f"Error uploading image: {str(e)}", "danger")
+
+
+
+
+
+
+
+
+        username = request.form.get('username', '').strip()
+        bio = request.form.get('bio', '').strip()
+        fun_fact = request.form.get('fun_fact', '').strip()
+        gender_preference = request.form.get('gender_preference', 'Both').strip()
+
+        # ✅ Username validation
+        if len(username) < 6:
+            flash("Username must be at least 6 characters long.", "danger")
             return redirect(url_for('edit_profile'))
 
-        # ✅ Check if username already exists (prevent duplicates)
+        if profanity.contains_profanity(username):
+            flash("Username contains inappropriate language.", "danger")
+            return redirect(url_for('edit_profile'))
+
         existing_user = mongo.db.users.find_one({"username": username})
         if existing_user and str(existing_user["_id"]) != user_id:
-            flash("Username already taken. Choose another one!", "danger")
+            flash("Username already taken. Please choose another.", "danger")
             return redirect(url_for('edit_profile'))
+
+        # ✅ Bio validation
+        if len(bio) < 6:
+            flash("Bio must be at least 6 characters long.", "danger")
+            return redirect(url_for('edit_profile'))
+
+        if profanity.contains_profanity(bio):
+            flash("Bio contains inappropriate language.", "danger")
+            return redirect(url_for('edit_profile'))
+
+        # ✅ Fun fact validation
+        if len(fun_fact) < 6:
+            flash("Fun Fact must be at least 6 characters long.", "danger")
+            return redirect(url_for('edit_profile'))
+
+        if profanity.contains_profanity(fun_fact):
+            flash("Fun Fact contains inappropriate language.", "danger")
+            return redirect(url_for('edit_profile'))
+
+
 
         # ✅ Force JSON parsing to properly detect empty lists
         fav_movies = request.form.get("fav_movies", "[]").strip()
@@ -451,13 +655,30 @@ def edit_profile():
     existing_gender_preference = user.get("gender_preference", "Both")  # ✅ Fetch stored gender preference
 
     return render_template(
-        "profile_edit.html",
-        user=user,
-        movies=existing_movies,
-        actors=existing_actors,
-        genres=existing_genres,
-        gender_preference=existing_gender_preference  # ✅ Pass gender preference to HTML
-    )
+    "profile_edit.html",
+    user=user,
+    movies=existing_movies,
+    actors=existing_actors,
+    genres=existing_genres,
+    gender_preference=existing_gender_preference,  # ✅ Pass gender preference to HTML
+    timestamp=datetime.utcnow().timestamp()        # ✅ Pass timestamp for image reload
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -487,9 +708,6 @@ def ajax_search_genres():
     if query:
         return jsonify(search_genres(query))
     return jsonify([])
-
-
-
 
 
 

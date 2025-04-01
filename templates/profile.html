@@ -140,7 +140,9 @@
     {% endwith %}
 
     <!-- ✅ Profile Picture -->
-    <img id="profile_pic_display" src="{{ user.profile_pic_url if user.profile_pic_url else 'https://via.placeholder.com/300' }}" alt="Profile Picture">
+    <!-- <img id="profile_pic_display" src="{{ user.profile_pic_url if user.profile_pic_url else 'https://via.placeholder.com/300' }}" alt="Profile Picture"> -->
+    <img id="profile_pic_display" src="{{ user.profile_pic_url }}?v={{ timestamp }}" alt="Profile Picture">
+
 
     <!-- ✅ User Info -->
     <div class="user-info">
@@ -193,38 +195,44 @@
           </div>
         </div>
       </div>
-      
 
     <!-- ✅ Action Buttons -->
     <button type="button" class="btn btn-primary" data-url="{{ url_for('edit_profile') }}">Edit Profile</button>
-    <button type="button" class="btn btn-secondary" data-url="{{ url_for('swipe_movies') }}" id="goToSwipe" disabled>Go to Movie Swipes</button>
+    <button type="button" class="btn btn-secondary" data-url="{{ url_for('swipe_movies') }}" id="goToSwipe">Go to Movie Swipes</button>
     <button type="button" class="btn btn-danger" id="logoutBtn">Logout</button>
     <button type="button" class="btn btn-danger mt-2" onclick="confirmDelete()">Delete Account</button>
   </div>
 
+  <!-- ✅ JavaScript section to control button behavior -->
   <script>
     document.getElementById("logoutBtn").addEventListener("click", function () {
-      window.location.href = "{{ url_for('logout') }}";
+      const confirmLogout = confirm("Are you sure you want to log out?");
+      if (confirmLogout) {
+        window.location.href = "{{ url_for('logout') }}";
+      }
     });
+    
 
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('button[data-url]').forEach(button => {
         button.addEventListener('click', function () {
-          window.location.href = this.getAttribute('data-url');
+          const target = this.getAttribute('data-url');
+
+          if (this.id === 'goToSwipe') {
+            const bio = "{{ user.bio|escape }}";
+            const funFact = "{{ user.fun_fact|escape }}";
+            const profilePic = "{{ user.profile_pic_url|escape }}";
+
+            if (!bio || bio.trim() === "" || !funFact || funFact.trim() === "" || !profilePic || profilePic.includes("placeholder")) {
+              alert("⚠️ Please complete your profile before advancing to MovieSwipes page.");
+              return;
+            }
+          }
+
+          window.location.href = target;
         });
       });
-
-      const bio = "{{ user.bio }}";
-      const funFact = "{{ user.fun_fact }}";
-      const profilePic = "{{ user.profile_pic_url }}";
-      const goToSwipeButton = document.getElementById('goToSwipe');
-
-      if (bio && funFact && profilePic) {
-        goToSwipeButton.disabled = false;
-      }
     });
   </script>
 </body>
 </html>
-
-
