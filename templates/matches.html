@@ -1,102 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Matches</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        .match-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background-color: #fff;
-        }
-        .match-profile {
-            display: flex;
-            align-items: center;
-        }
-        .match-profile img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 15px;
-        }
-        .match-actions {
-            display: flex;
-            gap: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>❤️ Your Matches</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #fbc2eb, #a6c1ee);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      background-color: #eef5ff;
+      border-radius: 20px;
+      padding: 40px 30px;
+      margin-top: 40px;
+      max-width: 850px;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      font-size: 42px;
+      font-weight: bold;
+      text-align: center;
+      color: #e74c3c;
+      margin-bottom: 20px;
+    }
+
+    .movie-icon {
+      text-align: center;
+      font-size: 32px;
+      color: #6c5ce7;
+      margin-bottom: 30px;
+    }
+
+    .match-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .match-profile {
+      display: flex;
+      align-items: center;
+    }
+
+    .match-profile img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 20px;
+      border: 3px solid #ff6f91;
+    }
+
+    .match-profile h5 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .match-profile p {
+      margin: 4px 0 0;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .match-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background-color: #6c5ce7;
+      border: none;
+      font-size: 16px;
+      padding: 10px 18px;
+      border-radius: 8px;
+    }
+
+    .btn-danger {
+      background-color: #ff4b5c;
+      border: none;
+      font-size: 16px;
+      padding: 10px 18px;
+      border-radius: 8px;
+    }
+
+    .btn-secondary {
+      font-size: 16px;
+      margin-top: 30px;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+
+    .alert-info {
+      font-size: 18px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h2 class="mb-4">Your Matches</h2>
+  <div class="container">
+    <h2> ❤️ Your Matches ❤️ </h2>
+    <div class="movie-icon">🎬</div>
 
-        {% if matches %}
-            {% for match in matches %}
-                <div class="match-card">
-                    <div class="match-profile">
-                        <img src="{{ match['profile_pic_url'] }}" alt="Profile Picture">
-                        <div>
-                            <h5>
-                                <a href="{{ url_for('view_match_profile', user_id=match['user_id']) }}">
-                                    {{ match['username'] }}
-                                </a>
-                            </h5>
-                            <p><strong>Common Likes:</strong> {{ match['common_likes'] }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="match-actions">
-                        <!-- ✅ Chat Button -->
-                        <a href="{{ url_for('chat', matched_user_id=match['user_id']) }}" class="btn btn-primary">Message</a>
+    {% if matches %}
+      {% for match in matches %}
+        <div class="match-card">
+          <div class="match-profile">
+            <img src="{{ match['profile_pic_url'] }}" alt="Profile Picture" />
+            <div>
+              <h5>
+                <a href="{{ url_for('view_match_profile', user_id=match['user_id']) }}">
+                  {{ match['username'] }}
+                </a>
+              </h5>
+              <p><strong>Common Likes:</strong> {{ match['common_likes'] }}</p>
+            </div>
+          </div>
 
-                        <!-- ✅ Updated Remove Button -->
-                        <button class="btn btn-danger remove-btn" data-user-id="{{ match['user_id'] }}">
-                            Remove
-                        </button>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="alert alert-info">You have no matches yet. Keep swiping!</p>
-        {% endif %}
+          <div class="match-actions">
+            <!-- ✅ Chat Button -->
+            <a href="{{ url_for('chat', matched_user_id=match['user_id']) }}" class="btn btn-primary">Message</a>
 
-        <a href="{{ url_for('swipe_movies') }}" class="btn btn-secondary mt-3">Back to Swiping</a>
-    </div>
+            <!-- ✅ Updated Remove Button -->
+            <button class="btn btn-danger remove-btn" data-user-id="{{ match['user_id'] }}">
+              Remove
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="alert alert-info">You have no matches yet. Keep swiping!</p>
+    {% endif %}
 
-    <!-- ✅ Match Removal JavaScript -->
-    <script>
-        document.querySelectorAll(".remove-btn").forEach(button => {
-            button.addEventListener("click", function () {
-                const matchedUserId = this.getAttribute("data-user-id");
+    <a href="{{ url_for('swipe_movies') }}" class="btn btn-secondary">Back to Swiping</a>
+  </div>
 
-                if (confirm("Are you sure you want to remove this match?")) {
-                    fetch("/remove_match", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ matched_user_id: matchedUserId })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // ✅ Reload page to reflect change
-                            window.location.href = "/matches";
-                        } else {
-                            alert("Error removing match.");
-                        }
-                    })
-                    .catch(error => console.error("Error removing match:", error));
-                }
-            });
-        });
-    </script>
+  <!-- ✅ Match Removal JavaScript -->
+  <script>
+    document.querySelectorAll(".remove-btn").forEach(button => {
+      button.addEventListener("click", function () {
+        const matchedUserId = this.getAttribute("data-user-id");
+
+        if (confirm("Are you sure you want to remove this match?")) {
+          fetch("/remove_match", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ matched_user_id: matchedUserId })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              window.location.href = "/matches";
+            } else {
+              alert("Error removing match.");
+            }
+          })
+          .catch(error => console.error("Error removing match:", error));
+        }
+      });
+    });
+  </script>
 </body>
 </html>

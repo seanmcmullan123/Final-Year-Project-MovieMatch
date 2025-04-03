@@ -1064,6 +1064,94 @@ def view_match_profile(user_id):
 UPLOAD_FOLDER = "static/uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+
+# @app.route('/chat/<matched_user_id>', methods=['GET', 'POST'])
+# def chat(matched_user_id):
+#     if 'user_id' not in session:
+#         flash("You need to log in first.", "danger")
+#         return redirect(url_for('login'))
+
+#     user_id = ObjectId(session['user_id'])
+#     matched_user = mongo.db.users.find_one({"_id": ObjectId(matched_user_id)})
+
+#     if not matched_user:
+#         flash("User not found.", "danger")
+#         return redirect(url_for('view_matches'))
+
+#     # ✅ Retrieve messages from MongoDB **without sorting yet**
+#     messages = list(mongo.db.messages.find({
+#         "$or": [
+#             {"sender": user_id, "receiver": ObjectId(matched_user_id)},
+#             {"sender": ObjectId(matched_user_id), "receiver": user_id}
+#         ]
+#     }))
+
+#     # ✅ Ensure every message has a timestamp before sorting
+#     for message in messages:
+#         if "timestamp" not in message:
+#             message["timestamp"] = datetime.utcnow()
+#             mongo.db.messages.update_one(
+#                 {"_id": message["_id"]},
+#                 {"$set": {"timestamp": message["timestamp"]}}
+#             )
+
+#     # ✅ Sort messages manually in Python (oldest → newest)
+#     messages = sorted(messages, key=lambda x: x["timestamp"])
+
+#     # ✅ Convert ObjectId to string for Jinja template
+#     for message in messages:
+#         message["sender"] = str(message["sender"])
+#         message["receiver"] = str(message["receiver"])
+
+#     if request.method == 'POST':
+#         data = request.get_json()  # ✅ Expecting JSON input
+#         message_text = data.get("message", "").strip()
+
+#         # if message_text:
+#         #     new_message = {
+#         #         "sender": user_id,
+#         #         "receiver": ObjectId(matched_user_id),
+#         #         "text": message_text,
+#         #         "timestamp": datetime.utcnow()
+#         #     }
+#         #     mongo.db.messages.insert_one(new_message)
+
+#         #     return jsonify({"success": True, "text": message_text, "sender": str(user_id)})
+
+#         if message_text:
+#             if profanity.contains_profanity(message_text):
+#                 return jsonify({"success": False, "error": "Message contains inappropriate language."}), 400
+
+#             new_message = {
+#                 "sender": user_id,
+#                 "receiver": ObjectId(matched_user_id),
+#                 "text": message_text,
+#                 "timestamp": datetime.utcnow()
+#             }
+#             mongo.db.messages.insert_one(new_message)
+
+#             return jsonify({"success": True, "text": message_text, "sender": str(user_id)})
+
+#     return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+
+
+
+
+# ✅ Load profanity once (add this at top of your app.py)
+profanity.load_censor_words()
+
+def custom_censor_text(message):
+    words = message.split()
+    censored_words = []
+    for word in words:
+        cleaned = re.sub(r'[^\w]', '', word).lower()  # Strip punctuation
+        if profanity.contains_profanity(cleaned):
+            censored = word[0] + '*' * (len(word) - 1)
+            censored_words.append(censored)
+        else:
+            censored_words.append(word)
+    return ' '.join(censored_words)
+
 @app.route('/chat/<matched_user_id>', methods=['GET', 'POST'])
 def chat(matched_user_id):
     if 'user_id' not in session:
@@ -1077,7 +1165,6 @@ def chat(matched_user_id):
         flash("User not found.", "danger")
         return redirect(url_for('view_matches'))
 
-    # ✅ Retrieve messages from MongoDB **without sorting yet**
     messages = list(mongo.db.messages.find({
         "$or": [
             {"sender": user_id, "receiver": ObjectId(matched_user_id)},
@@ -1085,7 +1172,6 @@ def chat(matched_user_id):
         ]
     }))
 
-    # ✅ Ensure every message has a timestamp before sorting
     for message in messages:
         if "timestamp" not in message:
             message["timestamp"] = datetime.utcnow()
@@ -1094,30 +1180,51 @@ def chat(matched_user_id):
                 {"$set": {"timestamp": message["timestamp"]}}
             )
 
-    # ✅ Sort messages manually in Python (oldest → newest)
     messages = sorted(messages, key=lambda x: x["timestamp"])
 
-    # ✅ Convert ObjectId to string for Jinja template
     for message in messages:
         message["sender"] = str(message["sender"])
         message["receiver"] = str(message["receiver"])
 
+
+
+    
+    # ✅ ✅ If it's an AJAX (JS fetch) request, return JSON instead of HTML
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({
+            "messages": [
+                {
+                    "sender": msg["sender"],
+                    "receiver": msg["receiver"],
+                    "text": msg["text"],
+                    "sender_name": "You" if msg["sender"] == str(user_id) else matched_user["username"]
+                }
+                for msg in messages
+            ]
+        })
+
+
+
+
     if request.method == 'POST':
-        data = request.get_json()  # ✅ Expecting JSON input
+        data = request.get_json()
         message_text = data.get("message", "").strip()
 
         if message_text:
+            censored_text = custom_censor_text(message_text)
+
             new_message = {
                 "sender": user_id,
                 "receiver": ObjectId(matched_user_id),
-                "text": message_text,
+                "text": censored_text,
                 "timestamp": datetime.utcnow()
             }
             mongo.db.messages.insert_one(new_message)
 
-            return jsonify({"success": True, "text": message_text, "sender": str(user_id)})
+            return jsonify({"success": True, "text": censored_text, "sender": str(user_id)})
 
     return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+
 
 
 
