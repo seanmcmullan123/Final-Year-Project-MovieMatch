@@ -1231,6 +1231,6 @@ def chat(matched_user_id):
 
 
 
-
+# TODO: Changed this to allow all exposure on all dns entries
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
