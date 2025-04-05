@@ -737,6 +737,14 @@ def chat(matched_user_id):
     user_id = ObjectId(session['user_id'])
     matched_user = mongo.db.users.find_one({"_id": ObjectId(matched_user_id)})
 
+    age = None
+    dob = matched_user.get("dob")
+    if dob:
+        if isinstance(dob, str):
+            dob = datetime.strptime(dob, "%Y-%m-%d")
+        age = datetime.now().year - dob.year - ((datetime.now().month, datetime.now().day) < (dob.month, dob.day))
+
+
     if not matched_user:
         flash("User not found.", "danger")
         return redirect(url_for('view_matches'))
@@ -785,7 +793,8 @@ def chat(matched_user_id):
             }
             mongo.db.messages.insert_one(new_message)
             return jsonify({"success": True, "text": censored_text, "sender": str(user_id)})
-    return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+    # return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+    return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id), age=age)
 
 
 

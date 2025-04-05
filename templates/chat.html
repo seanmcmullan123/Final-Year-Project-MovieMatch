@@ -141,7 +141,7 @@
     <div class="user-info">
       <img src="{{ matched_user['profile_pic_url'] }}" alt="Profile Picture" />
       <div class="user-details">
-        <h4>{{ matched_user['username'] }} ({{ matched_user['age'] }} years old)</h4>
+        <p><strong>Age:</strong> {{ age }}</p>
         <p><strong>Bio:</strong> {{ matched_user['bio'] }}</p>
         <p><strong>Fun Fact:</strong> {{ matched_user['fun_fact'] }}</p>
         <p><strong>Favorite Genres:</strong> {{ ", ".join(matched_user['fav_genres']) }}</p>
