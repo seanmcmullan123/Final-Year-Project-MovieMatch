@@ -1203,9 +1203,6 @@ def chat(matched_user_id):
             ]
         })
 
-
-
-
     if request.method == 'POST':
         data = request.get_json()
         message_text = data.get("message", "").strip()

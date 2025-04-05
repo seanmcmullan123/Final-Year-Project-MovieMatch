@@ -173,66 +173,70 @@
 
 
   
-  <!-- ✅ JavaScript for Chat -->
   <script>
+    // 📨 Handle sending messages
     document.getElementById("chat-form").addEventListener("submit", function(event) {
       event.preventDefault();
-
+  
       let messageInput = document.getElementById("message-input");
       let messageText = messageInput.value.trim();
       let chatBox = document.getElementById("chat-box");
-
+  
       if (messageText === "") return;
-
+  
       fetch("{{ url_for('chat', matched_user_id=matched_user['_id']) }}", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: messageText })
       })
       .then(response => response.json())
-
-
-
       .then(data => {
         if (data.success) {
-            let messageDiv = document.createElement("div");
-            messageDiv.classList.add("chat-message", "sent");
-            messageDiv.innerHTML = `<div class="message-sender">You:</div><div>${data.text}</div>`;
-            chatBox.appendChild(messageDiv);
-            
+          let messageDiv = document.createElement("div");
+          messageDiv.classList.add("chat-message", "sent");
+          messageDiv.innerHTML = `<div class="message-sender">You:</div><div>${data.text}</div>`;
+          chatBox.appendChild(messageDiv);
+  
           chatBox.scrollTop = chatBox.scrollHeight;
           messageInput.value = "";
+  
+          fetchMessages();  // 🔄 Get latest messages after sending
         } else {
           alert("Error sending message!");
         }
       })
       .catch(error => console.error("Error:", error));
     });
-
+  
+    // 🔄 Fetch new messages from the server
     function fetchMessages() {
-      fetch("{{ url_for('chat', matched_user_id=matched_user['_id']) }}")
+      fetch("{{ url_for('chat', matched_user_id=matched_user['_id']) }}", {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" }  // 👈 Needed to get JSON
+      })
       .then(response => response.json())
-    
-    
-    
-    
       .then(data => {
         let chatBox = document.getElementById("chat-box");
         chatBox.innerHTML = "";
-
+  
         data.messages.forEach(message => {
           let messageDiv = document.createElement("div");
           messageDiv.classList.add("chat-message", message.sender === "{{ current_user_id }}" ? "sent" : "received");
           messageDiv.innerHTML = `<div class="message-sender">${message.sender_name}:</div><div>${message.text}</div>`;
           chatBox.appendChild(messageDiv);
         });
-
+  
         chatBox.scrollTop = chatBox.scrollHeight;
       })
       .catch(error => console.error("Error fetching messages:", error));
     }
-
+  
+    // ⏱ Run fetchMessages every 3 seconds
     setInterval(fetchMessages, 3000);
+  
+    // 👋 Fetch once immediately when page loads
+    fetchMessages();
   </script>
+  
 </body>
 </html>
