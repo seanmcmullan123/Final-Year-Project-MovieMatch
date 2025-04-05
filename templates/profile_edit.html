@@ -167,9 +167,8 @@
         {% endwith %}
 
         <form method="POST" enctype="multipart/form-data" autocomplete="off" onsubmit="saveProfile(event)">
-            <!-- ✅ Profile Picture Upload + Crop -->
+            <!--  Profile Picture Upload + Crop -->
             <div class="form-group text-center">
-              <!-- Hidden file input -->
               <input type="file" name="profile_pic_input" id="profile_pic_input" style="display:none;" accept="image/*" onchange="onImageSelect(event)">
           
               <!-- Profile picture preview (click to upload) -->
@@ -180,7 +179,7 @@
                     style="max-width: 300px; max-height: 300px; border-radius: 10px; border: 3px solid #e74c3c; cursor: pointer;" />
             </div>
           
-            <!-- ✅ Cropper Modal -->
+            <!-- Cropper Modal -->
             <div class="modal fade" id="cropModal" tabindex="-1" role="dialog">
               <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content">
@@ -201,10 +200,7 @@
               </div>
             </div>
           
-            <!-- Hidden field to hold base64 cropped image -->
             <input type="hidden" name="cropped_image_data" id="cropped_image_data">
-          
-          
 
         <!-- Username -->
         <div class="form-group">
@@ -321,8 +317,6 @@
         function applyCrop() {
             const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
             croppedDataURL = canvas.toDataURL("image/jpeg");
-
-            // Preview cropped image
             document.getElementById("profile_pic_preview").src = croppedDataURL;
             document.getElementById("cropped_image_data").value = croppedDataURL;
 
@@ -336,7 +330,6 @@
 
         function saveProfile(event) {
             event.preventDefault();
-
             const formData = new FormData(event.target);
             const croppedImage = document.getElementById("cropped_image_data").value;
 
@@ -350,62 +343,51 @@
             })
             .then(response => response.text())
             .then(() => {
-            alert("✅ Profile updated successfully!");
+            alert(" Profile updated successfully!");
             window.location.reload();
             })
             .catch(error => {
-            console.error("❌ Error:", error);
-            alert("❌ Failed to update profile.");
+            console.error(" Error:", error);
+            alert(" Failed to update profile.");
             });
         }
 
-
-   
-    
-
-
-    
         document.addEventListener("DOMContentLoaded", function () {
             setupSearch("movie_search", "/search/movies", "selected_movies", "fav_movies_input", "movie_results");
             setupSearch("actor_search", "/search/actors", "selected_actors", "fav_actors_input", "actor_results");
         
-            // ✅ NEW: Genre search setup
+            // Genre search setup
             setupGenreSearch("genre_search", "selected_genres", "fav_genres_input", "genre_results");
         
             restoreSelections("fav_movies_input", "selected_movies");
             restoreSelections("fav_actors_input", "selected_actors");
-            restoreSelections("fav_genres_input", "selected_genres"); // ✅ NEW: Restore genres
-        
+            restoreSelections("fav_genres_input", "selected_genres"); 
+
             document.querySelector("form").addEventListener("submit", function (event) {
                 updateAllHiddenInputs();  
         
                 let moviesCount = document.querySelectorAll("#selected_movies .selected-item").length;
                 let actorsCount = document.querySelectorAll("#selected_actors .selected-item").length;
-                let genresCount = document.querySelectorAll("#selected_genres .selected-item").length; // ✅ NEW
-        
-                // **Fix: Show error and stop form submission if too many selections**
-                if (moviesCount > 3 || actorsCount > 3 || genresCount > 5) { // ✅ NEW: Genre validation
-                    alert("❌ Error: You can only select up to 3 movies, 3 actors, and 5 genres!");
-                    event.preventDefault();  // STOP form submission!
+                let genresCount = document.querySelectorAll("#selected_genres .selected-item").length;
+    
+                if (moviesCount > 3 || actorsCount > 3 || genresCount > 5) { //Genre validation
+                    alert(" Error: You can only select up to 3 movies, 3 actors, and 5 genres!");
+                    event.preventDefault(); 
                     return;
                 }
             });
         });
         
-
-    
     function setupSearch(inputId, url, targetDivId, hiddenInputId, resultsDivId) {
         let inputElement = document.getElementById(inputId);
         let resultsDiv = document.getElementById(resultsDivId);
         let targetDiv = document.getElementById(targetDivId);
-    
         inputElement.addEventListener("input", function () {
             let query = inputElement.value;
             if (query.length < 2) {
                 resultsDiv.style.display = "none";
                 return;
             }
-    
             fetch(`${url}?query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
@@ -418,19 +400,18 @@
                             div.innerText = item.title || item.name;
     
                             div.onclick = () => {
-                                // ✅ If user has already selected 3, show error and clear input
+                                // If user has 3, show error
                                 if (targetDiv.childElementCount >= 3) {
-                                    alert("❌ You already have 3 selections! Remove one before adding another.");
-                                    inputElement.value = "";  // ✅ Clears search bar
-                                    resultsDiv.style.display = "none";  // ✅ Close dropdown
+                                    alert(" You already have 3 selections! Remove one before adding another.");
+                                    inputElement.value = "";  
+                                    resultsDiv.style.display = "none"; 
                                     return;
                                 }
     
                                 addItem(item.title || item.name, targetDivId, hiddenInputId);
-                                inputElement.value = "";  // ✅ Clears search bar after selection
-                                resultsDiv.style.display = "none";  // ✅ Close dropdown after adding
+                                inputElement.value = ""; 
+                                resultsDiv.style.display = "none";  
                             };
-    
                             resultsDiv.appendChild(div);
                         });
                     } else {
@@ -447,10 +428,6 @@
             }
         });
     }
-    
-
-
-
 
     function setupGenreSearch(inputId, targetDivId, hiddenInputId, resultsDivId) {
         let inputElement = document.getElementById(inputId);
@@ -465,7 +442,7 @@
                 return;
             }
     
-            // ✅ Fetch Genres from TMDB API
+            // Fetch Genres from TMDB API
             fetch(`/search/genres?query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
@@ -475,7 +452,7 @@
                         data.forEach(genre => {
                             let div = document.createElement("div");
                             div.classList.add("dropdown-item");
-                            div.innerText = genre.name; // ✅ Fetch dynamic genre names
+                            div.innerText = genre.name; // Fetch dynamic genre names
                             div.onclick = () => {
                                 addItem(genre.name, targetDivId, hiddenInputId);
                                 inputElement.value = "";
@@ -498,8 +475,6 @@
     }
     
     
-
-
     
     function addItem(item, targetDivId, hiddenInputId) {
         let targetDiv = document.getElementById(targetDivId);
@@ -507,18 +482,18 @@
     
         let existingCount = targetDiv.childElementCount;
     
-        // ✅ Ensure warning flag only applies on selection attempts, NOT on page refresh
+        // Ensure warning flag only applies on selection attempts, Not on page refresh
         if (existingCount >= 3) {
-            sessionStorage.removeItem("pageLoaded"); // Reset flag to prevent false triggers
+            sessionStorage.removeItem("pageLoaded"); 
     
             if (!sessionStorage.getItem("alreadyWarned")) {
-                alert("❌ You already have 3 selections! Remove one before adding another.");
-                sessionStorage.setItem("alreadyWarned", "true");  // ✅ Store flag in session
+                alert(" You already have 3 selections! Remove one before adding another.");
+                sessionStorage.setItem("alreadyWarned", "true");  
             }
-            return;  // ⛔ STOP! Do NOT allow another selection
+            return;  // STOP! Do NOT allow another selection
         }
     
-        // ✅ Prevent duplicates
+        //  Prevent duplicates
         let exists = [...targetDiv.children].some(span => span.dataset.value === item);
         if (!exists) {
             let span = document.createElement("span");
@@ -527,44 +502,29 @@
             span.innerHTML = `${item} <span class="remove-item" onclick="removeItem(this, '${targetDivId}', '${hiddenInputId}')">X</span>`;
             targetDiv.appendChild(span);
             updateHiddenInput(targetDiv, hiddenInput);
-            sessionStorage.removeItem("alreadyWarned"); // ✅ Reset warning flag if a valid item is added
+            sessionStorage.removeItem("alreadyWarned"); //  Reset warning flag if a valid item is added
         }
     }
     
-    
-    
-    
-    
-
     function updateAllHiddenInputs() {
         updateHiddenInput(document.getElementById("selected_movies"), document.getElementById("fav_movies_input"));
         updateHiddenInput(document.getElementById("selected_actors"), document.getElementById("fav_actors_input"));
     }
-    
     function updateHiddenInput(targetDiv, hiddenInput) {
         let values = [...targetDiv.children].map(span => span.dataset.value);
-        hiddenInput.value = JSON.stringify(values); // ✅ Store JSON format (Fixing issue)
+        hiddenInput.value = JSON.stringify(values); 
     }
-
-    
     function removeItem(element, targetDivId, hiddenInputId) {
         let targetDiv = document.getElementById(targetDivId);
         let hiddenInput = document.getElementById(hiddenInputId);
-    
-        element.parentElement.remove(); // ✅ Remove the selection visually
-    
-        updateHiddenInput(targetDiv, hiddenInput); // ✅ Ensure removal is saved properly
+        element.parentElement.remove(); // 
+        updateHiddenInput(targetDiv, hiddenInput); 
     }
 
-
-
-
-    
-    // ✅ FIX: Restores selections correctly when the page is reloaded
+    // FIX: Restores selections correctly when the page is reloaded
     function restoreSelections(hiddenInputId, targetDivId) {
         let targetDiv = document.getElementById(targetDivId);
         let hiddenInput = document.getElementById(hiddenInputId);
-    
         let storedValues = hiddenInput.value;
         if (storedValues) {
             try {
@@ -576,66 +536,54 @@
         }
     }
     
-    
-
-
-    
     function saveProfile(event) {
-        event.preventDefault(); // ⛔ Prevent default form submission
-    
+        event.preventDefault();
         updateAllHiddenInputs();  
-    
         let moviesCount = document.querySelectorAll("#selected_movies .selected-item").length;
         let actorsCount = document.querySelectorAll("#selected_actors .selected-item").length;
     
-        // ✅ Validation: Prevent more than 3 selections
+        // Validation to prevent more than 3 selections
         if (moviesCount > 3 || actorsCount > 3) {
-            alert("❌ You already have 3 selections. Remove one if you want to add a new selection.");
+            alert(" You already have 3 selections. Remove one if you want to add a new selection.");
             return;
         }
-    
         const form = event.target;
         const formData = new FormData(form);
-    
         fetch(form.action, {
             method: "POST",
             body: formData
         })
         .then(response => response.text())
         .then(html => {
-            // ✅ TEMP container to parse response HTML
             const temp = document.createElement("div");
             temp.innerHTML = html;
-    
             const flash = temp.querySelector(".alert");
     
             if (flash) {
                 const msg = flash.textContent.trim();
-    
                 if (msg.includes("already taken")) {
-                    alert("❌ Username already used. Please try another.");
+                    alert(" Username already used. Please try another.");
                 } else if (msg.includes("must be at least 6 characters")) {
-                    alert("❌ Minimum character count of 6. Please enter more characters.");
+                    alert(" Minimum character count of 6. Please enter more characters.");
                 } else if (msg.includes("profanity") || msg.includes("offensive")) {
-                    alert("❌ Offensive/mature language detected. Please rephrase.");
+                    alert(" Offensive/mature language detected. Please rephrase.");
                 } else if (msg.toLowerCase().includes("success")) {
-                    alert("✅ Profile updated successfully!");
-                    window.location.reload(); // Optional: refresh to see updated info
+                    alert(" Profile updated successfully!");
+                    window.location.reload(); 
                 } else {
-                    alert("❌ Error: " + msg);
+                    alert(" Error: " + msg);
                 }
             } else {
-                alert("✅ Profile updated successfully!");
+                alert(" Profile updated successfully!");
                 window.location.reload();
             }
         })
         .catch(error => {
-            console.error("❌ Failed to save profile:", error);
-            alert("❌ Failed to save profile.");
+            console.error(" Failed to save profile:", error);
+            alert(" Failed to save profile.");
         });
     }
     
-
 </script>
 </body>
 </html>

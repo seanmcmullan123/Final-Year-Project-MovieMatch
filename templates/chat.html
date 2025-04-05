@@ -137,7 +137,7 @@
     <h2>💬 Chat with {{ matched_user['username'] }}</h2>
     <div class="chat-icon">📨</div>
 
-    <!-- ✅ Matched User Profile Section -->
+    <!-- Matched User Profile Section -->
     <div class="user-info">
       <img src="{{ matched_user['profile_pic_url'] }}" alt="Profile Picture" />
       <div class="user-details">
@@ -150,7 +150,7 @@
       </div>
     </div>
 
-    <!-- ✅ Chat Box -->
+    <!-- Chat Box -->
     <div class="chat-container" id="chat-box">
       {% for message in messages %}
         <div class="chat-message {% if message.sender == current_user_id %}sent{% else %}received{% endif %}">
@@ -160,7 +160,7 @@
       {% endfor %}
     </div>
 
-    <!-- ✅ Chat Form -->
+    <!-- Chat Form -->
     <form id="chat-form">
       <div class="form-group">
         <textarea id="message-input" name="message" class="form-control" placeholder="Type a message..." required></textarea>
@@ -174,7 +174,7 @@
 
   
   <script>
-    // 📨 Handle sending messages
+    // Handle sending messages
     document.getElementById("chat-form").addEventListener("submit", function(event) {
       event.preventDefault();
   
@@ -200,7 +200,7 @@
           chatBox.scrollTop = chatBox.scrollHeight;
           messageInput.value = "";
   
-          fetchMessages();  // 🔄 Get latest messages after sending
+          fetchMessages();  // Get latest messages after sending
         } else {
           alert("Error sending message!");
         }
@@ -208,11 +208,11 @@
       .catch(error => console.error("Error:", error));
     });
   
-    // 🔄 Fetch new messages from the server
+    // Fetch new messages from the server
     function fetchMessages() {
       fetch("{{ url_for('chat', matched_user_id=matched_user['_id']) }}", {
         method: "GET",
-        headers: { "X-Requested-With": "XMLHttpRequest" }  // 👈 Needed to get JSON
+        headers: { "X-Requested-With": "XMLHttpRequest" } 
       })
       .then(response => response.json())
       .then(data => {
@@ -231,10 +231,10 @@
       .catch(error => console.error("Error fetching messages:", error));
     }
   
-    // ⏱ Run fetchMessages every 3 seconds
+    // Run fetchMessages every 3 seconds
     setInterval(fetchMessages, 3000);
   
-    // 👋 Fetch once immediately when page loads
+    // Fetch once immediately when page loads
     fetchMessages();
   </script>
   

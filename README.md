@@ -1,13 +1,3 @@
-# # #http://localhost:5000/                     = Welcome page or "main"   = "MOVIE MATCH"  (first)
-# # #http://127.0.0.1:5000/view_users           = db page
-
-links above for my app on local machine!
-
-
-
-
-
-
 
 
 Here is my mongoDB Primary connection String for Read-Write Keys
@@ -16,12 +6,6 @@ mongodb://moviematchcosmos:LZyCVl9nFRB1sDsONaQ1wykcPuKHVZEqj8IuxDZTCBTYENbzgbFKX
 
 here is my (blob) storage account connection string
 DefaultEndpointsProtocol=https;AccountName=moviematchstorageaccount;AccountKey=gEAdsvNVv6vQFalK32i3qBEYo5omHhJ+eNlxzs43cvs0lIYq0OPxaMUjpZTT9ZaoDb4ZlNZ+VTiN+ASt3eWVeA==;EndpointSuffix=core.windows.net
-
-
-
-
-
-
 
 
 

@@ -129,10 +129,10 @@
           </div>
 
           <div class="match-actions">
-            <!-- ✅ Chat Button -->
+            <!-- Chat Button -->
             <a href="{{ url_for('chat', matched_user_id=match['user_id']) }}" class="btn btn-primary">Message</a>
 
-            <!-- ✅ Updated Remove Button -->
+            <!-- Updated Remove Button -->
             <button class="btn btn-danger remove-btn" data-user-id="{{ match['user_id'] }}">
               Remove
             </button>
@@ -146,7 +146,7 @@
     <a href="{{ url_for('swipe_movies') }}" class="btn btn-secondary">Back to Swiping</a>
   </div>
 
-  <!-- ✅ Match Removal JavaScript -->
+  <!-- Match Removal JavaScript -->
   <script>
     document.querySelectorAll(".remove-btn").forEach(button => {
       button.addEventListener("click", function () {
