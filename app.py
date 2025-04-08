@@ -139,6 +139,12 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
+
+        # ✅ NEW: Check if either field is blank
+        if not username or not password:
+            flash("Please fill in both fields", "danger")
+            return redirect(url_for('login'))
+        
         user = mongo.db.users.find_one({"username": username})
         if user and check_password_hash(user['password'], password):
             session['user_id'] = str(user['_id'])
@@ -780,20 +786,41 @@ def chat(matched_user_id):
                 for msg in messages
             ]
         })
+    # if request.method == 'POST':
+    #     data = request.get_json()
+    #     message_text = data.get("message", "").strip()
+    #     if message_text:
+    #         censored_text = custom_censor_text(message_text)
+    #         new_message = {
+    #             "sender": user_id,
+    #             "receiver": ObjectId(matched_user_id),
+    #             "text": censored_text,
+    #             "timestamp": datetime.utcnow()
+    #         }
+    #         mongo.db.messages.insert_one(new_message)
+    #         return jsonify({"success": True, "text": censored_text, "sender": str(user_id)})
+    # # return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+
+
+
+
+
     if request.method == 'POST':
         data = request.get_json()
         message_text = data.get("message", "").strip()
-        if message_text:
-            censored_text = custom_censor_text(message_text)
-            new_message = {
-                "sender": user_id,
-                "receiver": ObjectId(matched_user_id),
-                "text": censored_text,
-                "timestamp": datetime.utcnow()
-            }
-            mongo.db.messages.insert_one(new_message)
-            return jsonify({"success": True, "text": censored_text, "sender": str(user_id)})
-    # return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id))
+
+        if not message_text:
+            return jsonify({"success": False, "error": "Message cannot be empty"}), 400
+
+        censored_text = custom_censor_text(message_text)
+        new_message = {
+            "sender": user_id,
+            "receiver": ObjectId(matched_user_id),
+            "text": censored_text,
+            "timestamp": datetime.utcnow()
+        }
+        mongo.db.messages.insert_one(new_message)
+        return jsonify({"success": True, "text": censored_text, "sender": str(user_id)})
     return render_template('chat.html', matched_user=matched_user, messages=messages, current_user_id=str(user_id), age=age)
 
 
