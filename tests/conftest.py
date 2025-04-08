@@ -24,3 +24,6 @@ def client():
         yield client
 
 
+# RUN ALL TESTS  
+
+#   PYTHONPATH=. pytest

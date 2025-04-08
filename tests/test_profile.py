@@ -51,11 +51,11 @@ def test_delete_account(mock_mongo, client):
     # Check Mongo deletion
     mock_mongo.db.users.delete_one.assert_called_once_with({"_id": ObjectId(user_id)})
 
-    # ✅ Check JSON response
+    #  Check JSON response
     assert response.is_json
     assert response.get_json() == {"success": True}
 
-    # ✅ Check session is cleared
+    #  Check session is cleared
     with client.session_transaction() as sess:
         assert "user_id" not in sess
 
