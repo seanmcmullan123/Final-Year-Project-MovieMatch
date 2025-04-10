@@ -23,10 +23,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Deploy to Azure Web App
+    - name: Zip code for deployment
+      run: zip -r release.zip .
+
+    - name: Deploy using ZIP + Kudu API
       uses: azure/webapps-deploy@v2
       with:
         app-name: moviematchwebapp
         slot-name: Production
         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        package: .
+        package: release.zip
