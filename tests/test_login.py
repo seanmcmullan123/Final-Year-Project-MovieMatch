@@ -94,8 +94,3 @@ def test_login_blank_password(mock_mongo, client):
 
 
     #   PYTHONPATH=. pytest tests/test_login.py
-
-
-
-
-#ALL PASSED LETS GOOOO

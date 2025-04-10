@@ -248,15 +248,26 @@ def test_short_bio_or_fun_fact(mock_mongo, client):
     assert b"Bio must be at least 6 characters long" in response.data
 
 
-
-
-
-
-
-
- 
 #    PYTHONPATH=. pytest tests/test_edit_profile.py
 
+
+
+
+
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_edit_profile_page_loads
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_cancel_button_present
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_successful_profile_update
+
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_blank_fields_rejected
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_profanity_fields
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_duplicate_username
+
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_profile_pic_update
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_update_all_valid_fields
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_genres_affect_movieswipe
+
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_short_username_rejected
+#   PYTHONPATH=. pytest tests/test_edit_profile.py::test_short_bio_or_fun_fact
 
 
 
