@@ -23,3 +23,13 @@ git push origin main
 
 
 
+> python -c "import secrets; print(secrets.token_hex(24))"
+419996e4f5718f25f31c00a48073c2b5db6cc2e639eadb57
+
+
+#SECRET KEY =  419996e4f5718f25f31c00a48073c2b5db6cc2e639eadb57
+
+
+
+
+

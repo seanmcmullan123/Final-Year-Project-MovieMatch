@@ -1,0 +1,11 @@
+Flask==2.2.5
+Flask-PyMongo==2.3.0
+requests==2.31.0
+azure-core==1.32.0
+azure-storage-blob==12.24.0
+better_profanity==0.7.0
+pillow==11.2.0
+werkzeug==2.2.3
+gunicorn==21.2.0
+dnspython==2.7.0
+pymongo==4.10.1
