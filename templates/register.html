@@ -148,9 +148,26 @@
 
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" name="password" id="password" placeholder="••••••••" required>
+            <div style="position: relative;">
+                <input type="password" name="password" id="password" placeholder="••••••••" required>
+                <span onclick="togglePassword('password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                    👁️
+                </span>
+            </div>
             <div class="form-text">Min 8 characters with a number. No profanity.</div>
         </div>
+
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <div style="position: relative;">
+                <input type="password" name="confirm_password" id="confirm_password" placeholder="••••••••" required>
+                <span onclick="togglePassword('confirm_password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+                    👁️
+                </span>
+            </div>
+            <div class="form-text">Must match the password above.</div>
+        </div>
+        
 
         <div class="form-group">
             <label for="dob">Date of Birth</label>
@@ -175,6 +192,21 @@
         <a href="{{ url_for('home') }}" class="btn-secondary">Back to Home</a>
     </div>
 </div>
+
+
+<script>
+    function togglePassword(fieldId, icon) {
+        const field = document.getElementById(fieldId);
+        if (field.type === "password") {
+            field.type = "text";
+            icon.textContent = "👁️";
+        } else {
+            field.type = "password";
+            icon.textContent = "👁️";
+        }
+    }
+    </script>
+    
 
 </body>
 </html>

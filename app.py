@@ -60,6 +60,7 @@ def register():
         username = request.form['username'].strip()
         email = request.form['email'].strip()
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
         dob_str = request.form['dob']
         gender = request.form.get('gender')
 
@@ -88,6 +89,11 @@ def register():
             flash("Password must be at least 8 characters and contain a number.", "danger")
             return redirect(url_for('register'))
 
+            # ✅ Confirm password matches
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('register'))
+                    
         # Age Check: Must be 18 or older
         try:
             dob_date = datetime.strptime(dob_str, '%Y-%m-%d')
@@ -138,7 +144,6 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
 
         #  NEW: Check if either field is blank
         if not username or not password:

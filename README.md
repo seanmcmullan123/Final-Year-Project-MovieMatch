@@ -33,3 +33,18 @@ git push origin main
 
 
 
+# TO REDPLOY EACH TIME Run this Cmd
+
+git add .
+git commit -m "Update background color"
+git push origin main
+
+
+git add .
+git commit -m "etc etc this is jus the comment to show on github"
+git push origin main
+
+
+git add .
+git commit -m "Password confirm and view hidden *"
+git push origin main

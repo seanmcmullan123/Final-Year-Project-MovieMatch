@@ -27,8 +27,8 @@
     .container {
       position: relative;
       z-index: 2;
-      max-width: 400px;
-      margin: 100px auto;
+      max-width: 600px;
+      margin: 200px auto;
       background-color: #eef5ff;
       padding: 30px 40px;
       border-radius: 12px;
@@ -37,7 +37,7 @@
     }
 
     .container img {
-      width: 80px;
+      width: 180px;
       margin-bottom: 10px;
     }
 
@@ -51,21 +51,26 @@
       float: left;
       margin-bottom: 6px;
       font-weight: 600;
-      color: #333;
+      color: #333333;
     }
 
     .form-group {
       text-align: left;
       margin-bottom: 18px;
+      
     }
 
     input.form-control {
       width: 100%;
-      padding: 10px 14px;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 8px;
       border: 1px solid #ccc;
       font-size: 15px;
+      box-sizing: border-box;
     }
+
+
+
 
     .btn-primary {
       background-color: #e74c3c;
@@ -113,6 +118,35 @@
     a:hover {
       text-decoration: underline;
     }
+
+    .password-wrapper {
+      position: relative;
+  }
+  
+  .password-wrapper input {
+    width: 100%;
+    padding: 10px 38px 10px 14px; 
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.eye-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 18px;
+    color: #666;
+    line-height: 1;
+}
+
+  
+
+
+  
   </style>
 </head>
 <body>
@@ -139,9 +173,17 @@
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" name="password" id="password" class="form-control" required />
+        <div class="password-wrapper">
+          <input type="password" name="password" id="password" placeholder="••••••••" required>
+          <span onclick="togglePassword('password', this)" style="position: absolute; right: 10px; top: 55%; transform: translateY(-10%); cursor: pointer;">
+            👁️
+        </span>
+        </div>
       </div>
+      
 
+      
+    
       <button type="submit" class="btn btn-primary">Login</button>
     </form>
 
@@ -150,5 +192,24 @@
       <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
     </div>
   </div>
+
+
+  <script>
+    function togglePassword(id, icon) {
+      const input = document.getElementById(id);
+      if (input.type === "password") {
+        input.type = "text";
+        icon.textContent = "👁️";
+      } else {
+        input.type = "password";
+        icon.textContent = "👁️";
+      }
+    }
+  </script>
+  
+  
+
+
+
 </body>
 </html>
